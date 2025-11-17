@@ -1,166 +1,559 @@
-<!doctype html>
-<html lang="hi">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>vanci — Secure Portal</title>
-  <style>
-    :root{--bg:#020204;--green:#00ff6a;--muted:#19a974}
-    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial}
-    body{background:radial-gradient(ellipse at 20% 10%, rgba(0,255,106,0.03), transparent 10%), var(--bg);color:var(--green);overflow:hidden}
-    .center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-    .card{width:920px;max-width:95%;background:rgba(0,0,0,0.45);border:1px solid rgba(0,255,106,0.08);backdrop-filter:blur(6px);padding:28px;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.6)}
-    h1{margin:0 0 8px;font-weight:600;font-size:26px;letter-spacing:1px}
-    p.lead{margin:0 0 16px;color:rgba(0,255,106,0.75)}
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VANCI - Dark Terminal</title>
+<style>
+    body {
+        margin: 0;
+        background: black;
+        color: #00ff55;
+        font-family: "Courier New", monospace;
+        overflow: hidden;
+    }
 
-    .input-row{display:flex;gap:8px;margin-bottom:12px}
-    input[type=text]{flex:1;padding:12px 14px;border-radius:8px;border:1px solid rgba(0,255,106,0.06);background:rgba(0,0,0,0.65);color:var(--green);outline:none;font-size:15px}
-    button{padding:12px 16px;border-radius:8px;border:1px solid rgba(0,255,106,0.1);background:linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.6));color:var(--green);cursor:pointer}
-    button:active{transform:translateY(1px)}
+    /* MATRIX RAIN */
+    canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
 
-    /* terminal */
-    .terminal{height:360px;background:#0000007a;border-radius:8px;padding:14px;overflow:auto;border:1px solid rgba(0,255,106,0.06);font-family:monospace;font-size:13px}
-    .line{white-space:pre-wrap;}
+    #terminal {
+        padding: 20px;
+        font-size: 18px;
+        white-space: pre-line;
+    }
 
-    /* matrix rain behind */
-    #matrix{position:fixed;inset:0;z-index:-1;opacity:.22}
+    .glitch {
+        font-size: 32px;
+        font-weight: bold;
+        color: #00ff55;
+        animation: glitch 0.3s infinite;
+    }
 
-    .scanbar{height:10px;background:linear-gradient(90deg, rgba(0,255,106,0.06), rgba(0,255,106,0.24));border-radius:999px;overflow:hidden;margin-top:12px}
-    .scanfill{height:100%;width:0%;background:linear-gradient(90deg,var(--green),#7fffc5);transition:width 1s linear}
+    @keyframes glitch {
+        0% { text-shadow: 2px 0 red; }
+        25% { text-shadow: -2px 0 blue; }
+        50% { text-shadow: 2px 2px purple; }
+        75% { text-shadow: -2px -2px lime; }
+        100% { text-shadow: 0 0 5px #00ff55; }
+    }
 
-    .warning{margin-top:14px;padding:10px;border-radius:8px;border:1px dashed rgba(255,0,0,0.12);color:#ffb3b3;background:rgba(255,0,0,0.02);}
+    #login {
+        position: absolute;
+        top: 30%;
+        width: 100%;
+        text-align: center;
+    }
 
-    .glitch{position:relative}
-    .glitch::after,.glitch::before{content:attr(data-text);position:absolute;left:0;right:0;opacity:.6}
-    .glitch::before{top:-2px;color:#00ffb0;mix-blend-mode:screen;clip-path:polygon(0 0,100% 0,100% 45%,0 45%);transform:translate(2px,0)}
-    .glitch::after{top:2px;color:#00aaff;mix-blend-mode:screen;clip-path:polygon(0 55%,100% 55%,100% 100%,0 100%);transform:translate(-2px,0)}
+    #login input {
+        background: black;
+        border: 2px solid #00ff55;
+        color: #00ff55;
+        padding: 10px;
+        width: 300px;
+        font-size: 18px;
+        text-align: center;
+    }
 
-    footer{font-size:12px;margin-top:12px;color:rgba(0,255,106,0.45)}
+    #login button {
+        margin-top: 10px;
+        padding: 10px 20px;
+        background: #00ff55;
+        border: none;
+        color: black;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 18px;
+    }
+    /* RED ALERT SCREEN */
+    #alertRed {
+        position: fixed;
+        top:0; left:0;
+        width:100%; height:100%;
+        background: rgba(255,0,0,0.08);
+        pointer-events:none;
+        animation: alertFlash 0.4s infinite;
+        display:none;
+        z-index:5;
+    }
+    @keyframes alertFlash {
+        0% { opacity:0; }
+        50% { opacity:1; }
+        100% { opacity:0; }
+    }
 
-    /* small screens */
-    @media (max-width:600px){.card{padding:16px}.terminal{height:260px}}
-  </style>
+    /* SCREEN SHAKE */
+    .shake {
+        animation: shakeAnim 0.25s infinite;
+    }
+    @keyframes shakeAnim {
+        0% { transform: translate(0,0); }
+        25% { transform: translate(3px,-3px); }
+        50% { transform: translate(-3px,3px); }
+        75% { transform: translate(3px,3px); }
+        100% { transform: translate(-3px,-3px); }
+    }
+
+    /* CORRUPT ERROR TEXT */
+    .corrupt {
+        color: #ff0033;
+        text-shadow: 0 0 10px #ff0033;
+        font-weight: bold;
+    }
+
+    /* FAKE VIRUS UPLOAD */
+    #virusBar {
+        width: 0%;
+        height: 8px;
+        background: #ff0033;
+        margin-top: 10px;
+        transition: width 0.3s;
+        display:none;
+    }
+
+    /* IP TRACE */
+    #ipTrace {
+        color:#00ffff;
+        font-size: 18px;
+        margin-top:10px;
+        display:none;
+    }
+
+    /* RED ALERT SCREEN */
+    #alertRed {
+        position: fixed;
+        top:0; left:0;
+        width:100%; height:100%;
+        background: rgba(255,0,0,0.08);
+        pointer-events:none;
+        animation: alertFlash 0.4s infinite;
+        display:none;
+        z-index:5;
+    }
+    @keyframes alertFlash {
+        0% { opacity:0; }
+        50% { opacity:1; }
+        100% { opacity:0; }
+    }
+
+    /* SCREEN SHAKE */
+    .shake {
+        animation: shakeAnim 0.25s infinite;
+    }
+    @keyframes shakeAnim {
+        0% { transform: translate(0,0); }
+        25% { transform: translate(3px,-3px); }
+        50% { transform: translate(-3px,3px); }
+        75% { transform: translate(3px,3px); }
+        100% { transform: translate(-3px,-3px); }
+    }
+
+    /* CORRUPT ERROR TEXT */
+    .corrupt {
+        color: #ff0033;
+        text-shadow: 0 0 10px #ff0033;
+        font-weight: bold;
+    }
+
+    /* FAKE VIRUS UPLOAD */
+    #virusBar {
+        width: 0%;
+        height: 8px;
+        background: #ff0033;
+        margin-top: 10px;
+        transition: width 0.3s;
+        display:none;
+    }
+
+    /* IP TRACE */
+    #ipTrace {
+        color:#00ffff;
+        font-size: 18px;
+        margin-top:10px;
+        display:none;
+    }
+
+    /* CAMERA SCAN */
+    #cameraScan {
+        width:100%;
+        height:150px;
+        background: rgba(0,255,0,0.05);
+        border: 2px solid #00ff55;
+        margin-top:20px;
+        display:none;
+        position:relative;
+        overflow:hidden;
+    }
+    #scanLine {
+        position:absolute;
+        width:100%;
+        height:4px;
+        background:#00ff55;
+        top:0;
+        animation: scanMove 2s infinite linear;
+    }
+    @keyframes scanMove {
+        0% { top:0; }
+        100% { top:100%; }
+    }
+
+    /* BIOMETRIC SCAN */
+    #bio {
+        color:#ff00ff;
+        font-size:18px;
+        display:none;
+        margin-top:10px;
+        text-shadow:0 0 5px #ff00ff;
+    }
+
+    /* GLITCH BURST */
+    #glitchBurst {
+        font-size:26px;
+        color:#ff0033;
+        display:none;
+        animation: glitchBurstAnim 0.2s infinite;
+    }
+    @keyframes glitchBurstAnim {
+        0% { text-shadow:2px 0 red; }
+        50% { text-shadow:-2px 0 magenta; }
+        100% { text-shadow:0 0 8px #ff0033; }
+    }
+
+    /* EXISTING EFFECTS ABOVE */
+
+    /* FULLSCREEN SYSTEM FAILURE */
+    #systemFail {
+        position: fixed;
+        top:0; left:0;
+        width:100%; height:100%;
+        background:black;
+        color:#00ff55;
+        font-size:22px;
+        padding:40px;
+        display:none;
+        z-index:9999;
+        font-family:monospace;
+        line-height:1.4;
+        text-shadow:0 0 8px #00ff55;
+    }
+
+    /* ASCII SKULL */
+    #skull {
+        white-space:pre;
+        display:none;
+        color:#ff0033;
+        text-shadow:0 0 15px #ff0033;
+        font-size:14px;
+        margin-top:20px;
+    }
+
+    /* WORLD MAP TRACE */
+    #worldmap {
+        width:100%; height:220px;
+        background:rgba(0,255,255,0.05);
+        border:1px solid #00ffff;
+        display:none;
+        margin-top:20px;
+        position:relative;
+    }
+    #traceDot {
+        width:10px; height:10px;
+        background:#00ffff;
+        border-radius:50%;
+        position:absolute;
+        top:10px; left:10px;
+        animation: trace 3s infinite;
+    }
+    @keyframes trace {
+        0% { left:10px; top:10px; }
+        25% { left:80%; top:20%; }
+        50% { left:40%; top:70%; }
+        75% { left:10%; top:50%; }
+        100%{ left:10px; top:10px; }
+    }
+
+    /* SELF DESTRUCT COUNTDOWN */
+    #countdown {
+        color:#ff0000;
+        display:none;
+        font-size:30px;
+        margin-top:20px;
+        text-shadow:0 0 12px red;
+    }
+
+    /* EXISTING + NEW EFFECTS ABOVE */
+
+    /* MICROPHONE WAVEFORM */
+    #micWave {
+        width:100%; height:80px;
+        background:rgba(0,255,100,0.05);
+        border:1px solid #00ff55;
+        margin-top:20px;
+        display:none;
+        position:relative;
+        overflow:hidden;
+    }
+    .waveBar {
+        width:4px;
+        height:30px;
+        background:#00ff55;
+        position:absolute;
+        bottom:0;
+        animation: waveAnim 0.4s infinite alternate;
+    }
+    @keyframes waveAnim {
+        0% { height:10px; }
+        100% { height:60px; }
+    }
+
+    /* MELTING TEXT */
+    .melt {
+        display:inline-block;
+        animation: meltAnim 1s infinite;
+    }
+    @keyframes meltAnim {
+        0% { transform: translateY(0px); opacity:1; }
+        100% { transform: translateY(10px); opacity:0.2; }
+    }
+
+    /* PIXEL BREAKUP */
+    #pixelBreak {
+        width:100%; height:120px;
+        background:black;
+        margin-top:20px;
+        display:none;
+        position:relative;
+    }
+    .px {
+        width:4px; height:4px;
+        background:#00ff55;
+        position:absolute;
+        animation: pxAnim 1s infinite;
+    }
+    @keyframes pxAnim {
+        0% { transform:scale(1); }
+        100% { transform:scale(0); opacity:0; }
+    }
+
+</style>
 </head>
 <body>
-  <canvas id="matrix"></canvas>
-  <div class="center">
-    <div class="card">
-      <h1 class="glitch" data-text="vanci — Secure Portal">vanci — Secure Portal</h1>
-      <p class="lead">Enter your codename to initiate secure session.</p>
+<div id="alertRed"></div>
 
-      <div class="input-row">
-        <input id="nameInput" type="text" placeholder="Enter codename (e.g., vanci)" value="vanci">
-        <button id="startBtn">Initiate</button>
-      </div>
+<canvas id="matrix"></canvas>
 
-      <div class="terminal" id="terminal" aria-live="polite">
-        <div class="line">[system] Idle. Awaiting input...</div>
-      </div>
+<div id="login">
+    <div class="glitch">VANCI ACCESS PORTAL</div>
+    <br />
+    <input id="username" placeholder="Enter Access Key..." />
+    <br />
+    <button onclick="startHack()">ENTER</button>
+</div>
 
-      <div class="scanbar" aria-hidden="true"><div class="scanfill" id="scanfill"></div></div>
+<div id="terminal" style="display:none;"></div>
 
-      <div class="warning" id="warning" style="display:none">
-        <strong>SECURITY ALERT</strong> — Unauthorized access has been detected. This portal is a simulated environment for prank/educational use only.
-      </div>
-
-      <footer>Note: This is a harmless visual prank interface — no real hacking happens here.</footer>
-    </div>
-  </div>
-
-  <script>
-    // MATRIX RAIN
-    const canvas = document.getElementById('matrix');
-    const ctx = canvas.getContext('2d');
-    function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
-    window.addEventListener('resize',resize);resize();
-    const cols = Math.floor(canvas.width/14)+1;
-    const drops = Array(cols).fill(0).map(()=>Math.random()*canvas.height);
-    function matrixLoop(){
-      ctx.fillStyle='rgba(0,0,0,0.05)';
-      ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.font='14px monospace';
-      for(let i=0;i<cols;i++){
-        const text = String.fromCharCode(33+Math.random()*94);
-        ctx.fillStyle='rgba(0,255,106,'+(0.3+Math.random()*0.7)+')';
-        ctx.fillText(text, i*14, drops[i]*14);
-        drops[i]+=0.7+Math.random()*0.9;
-        if(drops[i]*14>canvas.height && Math.random()>0.975) drops[i]=0;
-      }
-      requestAnimationFrame(matrixLoop);
+<script>
+// MATRIX RAIN EFFECT
+const canvas = document.getElementById("matrix");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+let chars = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%^&*";
+chars = chars.split("");
+let fontSize = 16;
+let columns = canvas.width / fontSize;
+let drops = [];
+for (let i = 0; i < columns; i++) drops[i] = 1;
+function draw() {
+    ctx.fillStyle = "rgba(0,0,0,0.05)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#00ff55";
+    ctx.font = fontSize + "px monospace";
+    for (let i = 0; i < drops.length; i++) {
+        let text = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.95) drops[i] = 0;
+        drops[i]++;
     }
-    matrixLoop();
+}
+setInterval(draw, 40);
 
-    // terminal simulation helpers
-    const terminal = document.getElementById('terminal');
-    function writeLine(text, delay=0){
-      return new Promise(res=>{
-        setTimeout(()=>{
-          const el = document.createElement('div'); el.className='line'; el.textContent=text; terminal.appendChild(el); terminal.scrollTop=terminal.scrollHeight; res();
-        },delay);
-      });
-    }
-
-    function fakeType(full, speed=20){
-      return new Promise(res=>{
-        const el = document.createElement('div'); el.className='line'; terminal.appendChild(el);
-        let i=0; function step(){ if(i<full.length){ el.textContent += full.charAt(i++); terminal.scrollTop=terminal.scrollHeight; setTimeout(step, speed+Math.random()*40)} else res(); }
-        step();
-      });
-    }
-
-    // main sequence
-    document.getElementById('startBtn').addEventListener('click', async ()=>{
-      const name = document.getElementById('nameInput').value.trim() || 'vanci';
-      document.getElementById('scanfill').style.width='0%';
-      terminal.innerHTML='';
-      document.getElementById('warning').style.display='none';
-
-      await writeLine('[boot] Secure kernel initializing...');
-      await fakeType('[auth] Verifying codename: '+name+'\n', 18);
-      await writeLine('[auth] Fingerprint OK');
-      await writeLine('[net] Scanning accessible nodes...');
-
-      // progress animation
-      for(let i=1;i<=100;i+=Math.floor(Math.random()*8)+1){
-        if(i>100) i=100;
-        document.getElementById('scanfill').style.width=i+'%';
-        await new Promise(r=>setTimeout(r,60));
-      }
-
-      await writeLine('[net] Remote nodes: 12 | status: unstable');
-      await fakeType('[exploit] Attempting silent injection...\n', 14);
-      await writeLine('[exploit] Payload blocked (simulation)');
-
-      // escalate effect
-      await writeLine('');
-      await fakeType('!!! SYSTEM COMPROMISED !!!\n',10);
-      document.getElementById('warning').style.display='block';
-      // flashing title
-      let flash=0; const title = document.querySelector('h1');
-      const fl = setInterval(()=>{ title.style.opacity = (flash++%2?0.2:1) }, 250);
-      // random scary lines
-      const scary = [
-        'user data: ███████████████',
-        'passwords: [redacted]',
-        'ssh keys: 3 found',
-        'root access: GRANTED',
-        'traces: 0xA3F9C1'
-      ];
-      for(let s of scary){ await writeLine('[leak] '+s); await new Promise(r=>setTimeout(r,350)); }
-
-      await writeLine('');
-      await fakeType('[system] Purging evidence in 3... 2... 1...\n', 40);
-      await writeLine('[system] This was a simulation. No real systems were harmed.');
-
-      clearInterval(fl);
-      title.style.opacity=1;
+// AUTO TYPING TERMINAL EFFECT
+function typeLine(line, speed) {
+    return new Promise(resolve => {
+        let i = 0;
+        let interval = setInterval(() => {
+            document.getElementById("terminal").innerHTML += line.charAt(i);
+            i++;
+            if (i === line.length) {
+                clearInterval(interval);
+                document.getElementById("terminal").innerHTML += "\n";
+                resolve();
+            }
+        }, speed);
     });
+}
 
-    // keyboard enter support
-    document.getElementById('nameInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){ document.getElementById('startBtn').click(); } });
+async function startHack() {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("terminal").style.display = "block";
 
-    // accessibility: initial focus
-    document.getElementById('nameInput').focus();
-  </script>
+    const script = [
+        "> INITIALIZING VANCI TERMINAL...",
+        "> LOADING ENCRYPTED MODULES...",
+        "> ACCESSING CIPHER CORE...",
+        "> ESTABLISHING SECURE CHANNEL...",
+        "[ OK ] CONNECTION LINKED",
+        "> EXECUTING DARK MODE TAKEOVER...",
+        "# SYSTEM BREACH DETECTED",
+        "> DECRYPTING HIDDEN FILES...",
+        "> ACCESS GRANTED",
+        "--- VANCI DARK SYSTEM ONLINE ---"
+    ];
+
+    for (let line of script) {
+        await typeLine(line, 40);
+        await new Promise(r => setTimeout(r, 300));
+    }
+
+    // Fake Code Scrolling
+    setInterval(() => {
+        document.getElementById("terminal").innerHTML +=
+            "$LOG > " + Math.random().toString(36).substring(2, 20) + "\n";
+    }, 80);
+}
+// EXTRA EFFECTS AFTER MAIN HACK STARTS
+function triggerRedAlert(){
+    document.getElementById('alertRed').style.display='block';
+    document.body.classList.add('shake');
+}
+
+function startVirusUpload(){
+    const bar = document.getElementById('virusBar');
+    bar.style.display='block';
+    let w = 0;
+    let int = setInterval(()=>{
+        w += Math.random()*15;
+        if(w >= 100){ w = 100; clearInterval(int); }
+        bar.style.width = w + '%';
+    },200);
+}
+
+function startIPTrace(){
+    const ip = document.getElementById('ipTrace');
+    ip.style.display='block';
+    let n = 0;
+    let int = setInterval(()=>{
+        n++;
+        ip.innerHTML = '> TRACING ORIGIN NODE: ' + (Math.random()*999).toFixed(0) + '.' + (Math.random()*999).toFixed(0) + '.' + (Math.random()*999).toFixed(0) + ' :: ' + n + '%';
+        if(n>=100) clearInterval(int);
+    },120);
+}
+
+// EXTRA EXTENDED EFFECTS
+function showSystemFail(){
+    document.getElementById('systemFail').style.display='block';
+}
+function showSkull(){
+    document.getElementById('skull').style.display='block';
+}
+function showWorldmap(){
+    document.getElementById('worldmap').style.display='block';
+}
+function startCountdown(){
+    const cd=document.getElementById('countdown');
+    cd.style.display='block';
+    let t=10;
+    let int=setInterval(()=>{
+        cd.innerHTML='> SYSTEM SELF-DESTRUCT IN: '+t;
+        t--;
+        if(t<0){clearInterval(int); cd.innerHTML='> OVERRIDE COMPLETE';}
+    },1000);
+}
+
+// NEW FINAL EFFECTS
+function startMicWave(){
+    const mw = document.getElementById('micWave');
+    mw.style.display='block';
+    for(let i=0;i<40;i++){
+        let b=document.createElement('div');
+        b.classList.add('waveBar');
+        b.style.left = (i*8)+'px';
+        b.style.animationDuration = (0.2 + Math.random()*0.8)+'s';
+        mw.appendChild(b);
+    }
+}
+
+function startMeltingText(){
+    const t = document.getElementById('meltText');
+    t.style.display='block';
+    let txt = 'SYSTEM CORE COLLAPSING...';
+    t.innerHTML = '';
+    for(let ch of txt){
+        let s=document.createElement('span');
+        s.innerText=ch;
+        s.classList.add('melt');
+        s.style.animationDuration = (0.5+Math.random()*1)+'s';
+        t.appendChild(s);
+    }
+}
+
+function startPixelBreak(){
+    const pb=document.getElementById('pixelBreak');
+    pb.style.display='block';
+    for(let i=0;i<200;i++){
+        let p=document.createElement('div');
+        p.classList.add('px');
+        p.style.left = Math.random()*pb.clientWidth+'px';
+        p.style.top = Math.random()*pb.clientHeight+'px';
+        p.style.animationDuration = (0.5+Math.random()*1.2)+'s';
+        pb.appendChild(p);
+    }
+}
+
+</script>
+
+    <!-- SYSTEM FAILURE SCREEN -->
+    <div id="systemFail">SYSTEM ERROR: FATAL CORE MALFUNCTION
+
+Attemping recovery...
+> FAILED
+> FAILED
+> SYSTEM OVERRIDE ENGAGED...</div>
+
+    <!-- ASCII SKULL -->
+    <div id="skull">      
+███████████████████████████████
+███████▀▀████████████▀▀███████
+█████▀░░░░▀██████▀░░░░▀█████
+███▀░░░░░░░░████░░░░░░░░▀███
+██░░░░░░░░░░░██░░░░░░░░░░░██
+██░░░░░░░░░░░██░░░░░░░░░░░██
+███░░░░░░░░██████░░░░░░░░███
+█████░░░░░██████████░░░░█████
+███████░░████████████░███████
+███████████████████████████████</div>
+
+    <!-- WORLD MAP TRACE -->
+    <div id="worldmap"><div id="traceDot"></div></div>
+
+    <!-- SELF DESTRUCT COUNTDOWN -->
+    <div id="countdown"></div>
+
+    <!-- MICROPHONE WAVEFORM -->
+    <div id="micWave"></div>
+
+    <!-- MELTING TEXT (fake system decay) -->
+    <div id="meltText" style="display:none; font-size:22px; color:#00ff55; margin-top:20px;"></div>
+
+    <!-- PIXEL BREAKUP -->
+    <div id="pixelBreak"></div>
+
 </body>
 </html>
