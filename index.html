@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>vanci — Secure Portal</title>
+  <style>
+    :root{--bg:#020204;--green:#00ff6a;--muted:#19a974}
+    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial}
+    body{background:radial-gradient(ellipse at 20% 10%, rgba(0,255,106,0.03), transparent 10%), var(--bg);color:var(--green);overflow:hidden}
+    .center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+    .card{width:920px;max-width:95%;background:rgba(0,0,0,0.45);border:1px solid rgba(0,255,106,0.08);backdrop-filter:blur(6px);padding:28px;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.6)}
+    h1{margin:0 0 8px;font-weight:600;font-size:26px;letter-spacing:1px}
+    p.lead{margin:0 0 16px;color:rgba(0,255,106,0.75)}
+
+    .input-row{display:flex;gap:8px;margin-bottom:12px}
+    input[type=text]{flex:1;padding:12px 14px;border-radius:8px;border:1px solid rgba(0,255,106,0.06);background:rgba(0,0,0,0.65);color:var(--green);outline:none;font-size:15px}
+    button{padding:12px 16px;border-radius:8px;border:1px solid rgba(0,255,106,0.1);background:linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.6));color:var(--green);cursor:pointer}
+    button:active{transform:translateY(1px)}
+
+    /* terminal */
+    .terminal{height:360px;background:#0000007a;border-radius:8px;padding:14px;overflow:auto;border:1px solid rgba(0,255,106,0.06);font-family:monospace;font-size:13px}
+    .line{white-space:pre-wrap;}
+
+    /* matrix rain behind */
+    #matrix{position:fixed;inset:0;z-index:-1;opacity:.22}
+
+    .scanbar{height:10px;background:linear-gradient(90deg, rgba(0,255,106,0.06), rgba(0,255,106,0.24));border-radius:999px;overflow:hidden;margin-top:12px}
+    .scanfill{height:100%;width:0%;background:linear-gradient(90deg,var(--green),#7fffc5);transition:width 1s linear}
+
+    .warning{margin-top:14px;padding:10px;border-radius:8px;border:1px dashed rgba(255,0,0,0.12);color:#ffb3b3;background:rgba(255,0,0,0.02);}
+
+    .glitch{position:relative}
+    .glitch::after,.glitch::before{content:attr(data-text);position:absolute;left:0;right:0;opacity:.6}
+    .glitch::before{top:-2px;color:#00ffb0;mix-blend-mode:screen;clip-path:polygon(0 0,100% 0,100% 45%,0 45%);transform:translate(2px,0)}
+    .glitch::after{top:2px;color:#00aaff;mix-blend-mode:screen;clip-path:polygon(0 55%,100% 55%,100% 100%,0 100%);transform:translate(-2px,0)}
+
+    footer{font-size:12px;margin-top:12px;color:rgba(0,255,106,0.45)}
+
+    /* small screens */
+    @media (max-width:600px){.card{padding:16px}.terminal{height:260px}}
+  </style>
+</head>
+<body>
+  <canvas id="matrix"></canvas>
+  <div class="center">
+    <div class="card">
+      <h1 class="glitch" data-text="vanci — Secure Portal">vanci — Secure Portal</h1>
+      <p class="lead">Enter your codename to initiate secure session.</p>
+
+      <div class="input-row">
+        <input id="nameInput" type="text" placeholder="Enter codename (e.g., vanci)" value="vanci">
+        <button id="startBtn">Initiate</button>
+      </div>
+
+      <div class="terminal" id="terminal" aria-live="polite">
+        <div class="line">[system] Idle. Awaiting input...</div>
+      </div>
+
+      <div class="scanbar" aria-hidden="true"><div class="scanfill" id="scanfill"></div></div>
+
+      <div class="warning" id="warning" style="display:none">
+        <strong>SECURITY ALERT</strong> — Unauthorized access has been detected. This portal is a simulated environment for prank/educational use only.
+      </div>
+
+      <footer>Note: This is a harmless visual prank interface — no real hacking happens here.</footer>
+    </div>
+  </div>
+
+  <script>
+    // MATRIX RAIN
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
+    window.addEventListener('resize',resize);resize();
+    const cols = Math.floor(canvas.width/14)+1;
+    const drops = Array(cols).fill(0).map(()=>Math.random()*canvas.height);
+    function matrixLoop(){
+      ctx.fillStyle='rgba(0,0,0,0.05)';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.font='14px monospace';
+      for(let i=0;i<cols;i++){
+        const text = String.fromCharCode(33+Math.random()*94);
+        ctx.fillStyle='rgba(0,255,106,'+(0.3+Math.random()*0.7)+')';
+        ctx.fillText(text, i*14, drops[i]*14);
+        drops[i]+=0.7+Math.random()*0.9;
+        if(drops[i]*14>canvas.height && Math.random()>0.975) drops[i]=0;
+      }
+      requestAnimationFrame(matrixLoop);
+    }
+    matrixLoop();
+
+    // terminal simulation helpers
+    const terminal = document.getElementById('terminal');
+    function writeLine(text, delay=0){
+      return new Promise(res=>{
+        setTimeout(()=>{
+          const el = document.createElement('div'); el.className='line'; el.textContent=text; terminal.appendChild(el); terminal.scrollTop=terminal.scrollHeight; res();
+        },delay);
+      });
+    }
+
+    function fakeType(full, speed=20){
+      return new Promise(res=>{
+        const el = document.createElement('div'); el.className='line'; terminal.appendChild(el);
+        let i=0; function step(){ if(i<full.length){ el.textContent += full.charAt(i++); terminal.scrollTop=terminal.scrollHeight; setTimeout(step, speed+Math.random()*40)} else res(); }
+        step();
+      });
+    }
+
+    // main sequence
+    document.getElementById('startBtn').addEventListener('click', async ()=>{
+      const name = document.getElementById('nameInput').value.trim() || 'vanci';
+      document.getElementById('scanfill').style.width='0%';
+      terminal.innerHTML='';
+      document.getElementById('warning').style.display='none';
+
+      await writeLine('[boot] Secure kernel initializing...');
+      await fakeType('[auth] Verifying codename: '+name+'\n', 18);
+      await writeLine('[auth] Fingerprint OK');
+      await writeLine('[net] Scanning accessible nodes...');
+
+      // progress animation
+      for(let i=1;i<=100;i+=Math.floor(Math.random()*8)+1){
+        if(i>100) i=100;
+        document.getElementById('scanfill').style.width=i+'%';
+        await new Promise(r=>setTimeout(r,60));
+      }
+
+      await writeLine('[net] Remote nodes: 12 | status: unstable');
+      await fakeType('[exploit] Attempting silent injection...\n', 14);
+      await writeLine('[exploit] Payload blocked (simulation)');
+
+      // escalate effect
+      await writeLine('');
+      await fakeType('!!! SYSTEM COMPROMISED !!!\n',10);
+      document.getElementById('warning').style.display='block';
+      // flashing title
+      let flash=0; const title = document.querySelector('h1');
+      const fl = setInterval(()=>{ title.style.opacity = (flash++%2?0.2:1) }, 250);
+      // random scary lines
+      const scary = [
+        'user data: ███████████████',
+        'passwords: [redacted]',
+        'ssh keys: 3 found',
+        'root access: GRANTED',
+        'traces: 0xA3F9C1'
+      ];
+      for(let s of scary){ await writeLine('[leak] '+s); await new Promise(r=>setTimeout(r,350)); }
+
+      await writeLine('');
+      await fakeType('[system] Purging evidence in 3... 2... 1...\n', 40);
+      await writeLine('[system] This was a simulation. No real systems were harmed.');
+
+      clearInterval(fl);
+      title.style.opacity=1;
+    });
+
+    // keyboard enter support
+    document.getElementById('nameInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){ document.getElementById('startBtn').click(); } });
+
+    // accessibility: initial focus
+    document.getElementById('nameInput').focus();
+  </script>
+</body>
+</html>
